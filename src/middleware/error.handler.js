@@ -28,6 +28,24 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
+  // Custom Conflict Error (like duplicate organization name)
+  if (err.name === "ConflictError") {
+    return res.status(409).json({
+      status: 409,
+      code: "CONFLICT_ERROR",
+      message: err.message,
+    });
+  }
+
+  // Custom NotFoundError
+  if (err.name === "NotFoundError") {
+    return res.status(404).json({
+      status: 404,
+      code: "NOT_FOUND_ERROR",
+      message: err.message,
+    });
+  }
+
   // Custom Authentication Failure
   if (err.name === "AuthenticationError") {
     return res.status(401).json({

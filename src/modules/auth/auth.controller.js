@@ -1,11 +1,7 @@
 const { registerSchema, loginSchema } = require("./auth.validation");
 const { registerUser, loginUser } = require("./auth.service");
-const express = require("express");
 
-const router = express.Router();
-
-// POST /auth/register
-router.post("/register", async (req, res, next) => {
+const register = async (req, res, next) => {
   try {
     const data = registerSchema.parse(req.body);
     const user = await registerUser(data);
@@ -17,10 +13,9 @@ router.post("/register", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
-// POST /auth/login
-router.post("/login", async (req, res, next) => {
+const login = async (req, res, next) => {
   try {
     const data = loginSchema.parse(req.body);
     const result = await loginUser(data);
@@ -32,6 +27,9 @@ router.post("/login", async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
-module.exports = router;
+module.exports = {
+  register,
+  login,
+};
