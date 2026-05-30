@@ -1,7 +1,7 @@
 const { OpenAPIRegistry, OpenApiGeneratorV3 } = require("@asteasolutions/zod-to-openapi");
 const swaggerUi = require("swagger-ui-express");
 const { z } = require("zod");
-const { registerSchema, loginSchema } = require("../modules/auth/auth.validation");
+const { registerSchema, loginSchema, refreshSchema, logoutSchema } = require("../modules/auth/auth.validation");
 const { createOrgSchema, updateOrgSchema } = require("../modules/organizations/organizations.validation");
 
 const registry = new OpenAPIRegistry();
@@ -24,7 +24,19 @@ const RegisterSuccessResponse = registry.register("RegisterSuccessResponse", z.o
 
 const LoginSuccessResponse = registry.register("LoginSuccessResponse", z.object({
   access_token: z.string().openapi({ example: "signed-jwt-access-token" }),
-  refresh_token: z.string().openapi({ example: "" }),
+  refresh_token: z.string().openapi({ example: "signed-jwt-refresh-token" }),
+}));
+
+const RefreshBody = registry.register("RefreshInput", refreshSchema);
+const LogoutBody = registry.register("LogoutInput", logoutSchema);
+
+const RefreshSuccessResponse = registry.register("RefreshSuccessResponse", z.object({
+  access_token: z.string().openapi({ example: "new-signed-jwt-access-token" }),
+  refresh_token: z.string().openapi({ example: "new-signed-jwt-refresh-token" }),
+}));
+
+const LogoutSuccessResponse = registry.register("LogoutSuccessResponse", z.object({
+  message: z.string().openapi({ example: "Logged out successfully" }),
 }));
 
 const CreateOrgBody = registry.register("CreateOrgInput", createOrgSchema);
@@ -114,6 +126,86 @@ registry.registerPath({
       content: {
         "application/json": {
           schema: ErrorResponse,
+        },
+      },
+    },
+    500: {
+      description: "Internal Server Error",
+      content: {
+        "application/json": {
+          schema: ErrorResponse,
+        },
+      },
+    },
+  },
+});
+
+// POST /auth/refresh Path definition
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/auth/refresh",
+  summary: "Refresh Tokens",
+  description: "Rotates the refresh token and issues a new access token. Implements reuse detection — if a revoked token is sent, all tokens for the user are invalidated.",
+  tags: ["Auth"],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: RefreshBody,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Tokens refreshed successfully",
+      content: {
+        "application/json": {
+          schema: RefreshSuccessResponse,
+        },
+      },
+    },
+    401: {
+      description: "Invalid or expired refresh token",
+      content: {
+        "application/json": {
+          schema: ErrorResponse,
+        },
+      },
+    },
+    500: {
+      description: "Internal Server Error",
+      content: {
+        "application/json": {
+          schema: ErrorResponse,
+        },
+      },
+    },
+  },
+});
+
+// POST /auth/logout Path definition
+registry.registerPath({
+  method: "post",
+  path: "/api/v1/auth/logout",
+  summary: "User Logout",
+  description: "Revokes the provided refresh token, preventing further use.",
+  tags: ["Auth"],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: LogoutBody,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Logged out successfully",
+      content: {
+        "application/json": {
+          schema: LogoutSuccessResponse,
         },
       },
     },
