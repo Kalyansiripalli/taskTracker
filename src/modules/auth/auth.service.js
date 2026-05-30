@@ -5,32 +5,38 @@ const getPrismaClient = require("../../config/db");
 const getJwtSecret = () => process.env.JWT_SECRET;
 const getJwtRefreshSecret = () => process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
 
-const registerUser = async ({ email, password, organization_id, role }) => {
+const registerUser = async ({ organization_name, email, password }) => {
   const prisma = await getPrismaClient();
 
-  // verify organization exists
-  const org = await prisma.organization.findUnique({
-    where: { id: organization_id },
+  // Check for duplicate organization name (case-insensitive)
+  const duplicate = await prisma.organization.findFirst({
+    where: { name: { equals: organization_name, mode: "insensitive" } },
   });
 
-  if (!org) {
-    const error = new Error("The specified organization does not exist");
-    error.name = "ValidationError";
+  if (duplicate) {
+    const error = new Error("Organization with this name already exists");
+    error.name = "ConflictError";
     throw error;
   }
 
+  // Create the organization
+  const org = await prisma.organization.create({
+    data: { name: organization_name },
+  });
+
+  // Hash password and create admin user
   const password_hash = await bcryptjs.hash(password, 10);
 
   const user = await prisma.user.create({
     data: {
       email,
       password_hash,
-      organization_id,
-      role,
+      organization_id: org.id,
+      role: "ADMIN",
     },
   });
 
-  return user;
+  return { organization: org, user };
 };
 
 const loginUser = async ({ email, password }) => {

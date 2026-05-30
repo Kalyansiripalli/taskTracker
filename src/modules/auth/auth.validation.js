@@ -4,6 +4,11 @@ const { extendZodWithOpenApi } = require("@asteasolutions/zod-to-openapi");
 extendZodWithOpenApi(z);
 
 const registerSchema = z.object({
+  organization_name: z
+    .string()
+    .min(2, "Organization name must be at least 2 characters")
+    .max(255),
+
   email: z.string().email("Invalid email format"),
 
   password: z
@@ -13,14 +18,6 @@ const registerSchema = z.object({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/[0-9]/, "Password must contain at least one number")
     .regex(/[^a-zA-Z0-9]/, "Password must contain at least one special character"),
-
-  organization_id: z.string().uuid("Invalid organization ID format"),
-
-  role: z.enum(["ADMIN", "MANAGER", "MEMBER"], {
-    error: () => ({
-      message: "Invalid role specified",
-    }),
-  }),
 });
 
 const loginSchema = z.object({

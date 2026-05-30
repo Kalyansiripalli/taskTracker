@@ -2,9 +2,16 @@ const { OpenAPIRegistry, OpenApiGeneratorV3 } = require("@asteasolutions/zod-to-
 const swaggerUi = require("swagger-ui-express");
 const { z } = require("zod");
 const { registerSchema, loginSchema, refreshSchema, logoutSchema } = require("../modules/auth/auth.validation");
-const { createOrgSchema, updateOrgSchema } = require("../modules/organizations/organizations.validation");
+const { updateOrgSchema } = require("../modules/organizations/organizations.validation");
 
 const registry = new OpenAPIRegistry();
+
+// Register the security scheme for Bearer Auth
+registry.registerComponent("securitySchemes", "BearerAuth", {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "JWT",
+});
 
 // Register request body schemas
 const RegisterBody = registry.register("RegisterInput", registerSchema);
@@ -18,8 +25,9 @@ const ErrorResponse = registry.register("ErrorResponse", z.object({
 }));
 
 const RegisterSuccessResponse = registry.register("RegisterSuccessResponse", z.object({
-  message: z.string().openapi({ example: "User registered successfully" }),
+  message: z.string().openapi({ example: "registered successfully" }),
   userId: z.string().uuid().openapi({ example: "123e4567-e89b-12d3-a456-426614174000" }),
+  organizationId: z.string().uuid().openapi({ example: "987e6543-e21b-12d3-a456-426614174000" }),
 }));
 
 const LoginSuccessResponse = registry.register("LoginSuccessResponse", z.object({
@@ -39,7 +47,6 @@ const LogoutSuccessResponse = registry.register("LogoutSuccessResponse", z.objec
   message: z.string().openapi({ example: "Logged out successfully" }),
 }));
 
-const CreateOrgBody = registry.register("CreateOrgInput", createOrgSchema);
 const UpdateOrgBody = registry.register("UpdateOrgInput", updateOrgSchema);
 
 const OrgResponse = registry.register("Organization", z.object({
@@ -56,8 +63,8 @@ const DeleteOrgResponse = registry.register("DeleteOrgResponse", z.object({
 registry.registerPath({
   method: "post",
   path: "/api/v1/auth/register",
-  summary: "User Registration",
-  description: "Registers a new user inside an organization. Performs strong password validation and organization existence verification.",
+  summary: "Organization & Admin Registration",
+  description: "Creates a new organization and registers the founding user as an ADMIN. Validates organization name uniqueness (case-insensitive) and enforces strong password requirements.",
   tags: ["Auth"],
   request: {
     body: {
@@ -70,7 +77,7 @@ registry.registerPath({
   },
   responses: {
     201: {
-      description: "User registered successfully",
+      description: "registered successfully",
       content: {
         "application/json": {
           schema: RegisterSuccessResponse,
@@ -78,7 +85,15 @@ registry.registerPath({
       },
     },
     400: {
-      description: "Validation error or Conflict error",
+      description: "Validation error",
+      content: {
+        "application/json": {
+          schema: ErrorResponse,
+        },
+      },
+    },
+    409: {
+      description: "Organization name already exists",
       content: {
         "application/json": {
           schema: ErrorResponse,
@@ -211,42 +226,6 @@ registry.registerPath({
     },
     500: {
       description: "Internal Server Error",
-      content: {
-        "application/json": {
-          schema: ErrorResponse,
-        },
-      },
-    },
-  },
-});
-
-// POST /organizations Path definition
-registry.registerPath({
-  method: "post",
-  path: "/api/v1/organizations",
-  summary: "Create Organization",
-  description: "Creates a new organization.",
-  tags: ["Organizations"],
-  request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: CreateOrgBody,
-        },
-      },
-    },
-  },
-  responses: {
-    201: {
-      description: "Organization created successfully",
-      content: {
-        "application/json": {
-          schema: OrgResponse,
-        },
-      },
-    },
-    400: {
-      description: "Validation error",
       content: {
         "application/json": {
           schema: ErrorResponse,
@@ -417,6 +396,7 @@ function getSwaggerDocs() {
         description: "Development Server",
       },
     ],
+    security: [{ BearerAuth: [] }],
   });
 }
 

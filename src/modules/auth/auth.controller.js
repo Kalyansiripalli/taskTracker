@@ -4,11 +4,12 @@ const { registerUser, loginUser, refreshUserTokens, logoutUser } = require("./au
 const register = async (req, res, next) => {
   try {
     const data = registerSchema.parse(req.body);
-    const user = await registerUser(data);
+    const result = await registerUser(data);
 
     return res.status(201).json({
-      message: "User registered successfully",
-      userId: user.id,
+      message: "registered successfully",
+      userId: result.user.id,
+      organizationId: result.organization.id,
     });
   } catch (err) {
     next(err);

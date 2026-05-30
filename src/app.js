@@ -1,6 +1,7 @@
 const express = require("express");
 const authRoutes = require("./modules/auth/auth.routes");
 const organizationRoutes = require("./modules/organizations/organizations.routes");
+const authGuard = require("./middleware/auth.guard");
 const errorHandler = require("./middleware/error.handler");
 
 const { swaggerUi, swaggerDocs } = require("./config/swagger");
@@ -13,11 +14,14 @@ app.use(express.json());
 // Mount Swagger UI documentation
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Mount organization routes
-app.use("/api/v1/organizations", organizationRoutes);
-
-// Mount authentication routes
+// Mount authentication routes (public)
 app.use("/api/v1/auth", authRoutes);
+
+// Authentication guard — all routes below require a valid access token
+app.use(authGuard);
+
+// Mount organization routes (protected)
+app.use("/api/v1/organizations", organizationRoutes);
 
 // Centralized error handler (must be registered last)
 app.use(errorHandler);

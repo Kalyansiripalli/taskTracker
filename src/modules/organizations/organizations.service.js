@@ -1,30 +1,5 @@
 const getPrismaClient = require("../../config/db");
 
-const createOrg = async ({ name }) => {
-  const prisma = await getPrismaClient();
-
-  // Check for duplicate organization name
-  const duplicate = await prisma.organization.findFirst({
-    where: { name: { equals: name, mode: "insensitive" } },
-  });
-
-  if (duplicate) {
-    const error = new Error("Organization with this name already exists");
-    error.name = "ConflictError";
-    throw error;
-  }
-
-  const org = await prisma.organization.create({
-    data: { name },
-    select: {
-      id: true,
-      name: true,
-      created_at: true,
-    },
-  });
-  return org;
-};
-
 const listOrgs = async () => {
   const prisma = await getPrismaClient();
   const orgs = await prisma.organization.findMany({
@@ -120,7 +95,6 @@ const deleteOrg = async (id) => {
 };
 
 module.exports = {
-  createOrg,
   listOrgs,
   getOrgById,
   updateOrg,

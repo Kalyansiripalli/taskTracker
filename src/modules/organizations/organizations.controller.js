@@ -1,6 +1,5 @@
-const { createOrgSchema, updateOrgSchema } = require("./organizations.validation");
+const { updateOrgSchema } = require("./organizations.validation");
 const {
-  createOrg,
   listOrgs,
   getOrgById,
   updateOrg,
@@ -10,16 +9,6 @@ const { z } = require("zod");
 
 // Validate UUID parameter
 const idParamSchema = z.string().uuid("Invalid organization ID format");
-
-const createOrganization = async (req, res, next) => {
-  try {
-    const data = createOrgSchema.parse(req.body);
-    const org = await createOrg(data);
-    return res.status(201).json(org);
-  } catch (err) {
-    next(err);
-  }
-};
 
 const getOrganizations = async (req, res, next) => {
   try {
@@ -62,7 +51,6 @@ const deleteOrganization = async (req, res, next) => {
 };
 
 module.exports = {
-  createOrganization,
   getOrganizations,
   getOrganization,
   updateOrganization,
